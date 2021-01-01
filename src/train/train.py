@@ -43,14 +43,20 @@ class TrainCar:
     def position_model(self):
         x = (self.front_wheels.loc.pos.x + self.back_wheels.loc.pos.x) / 2
         y = (self.front_wheels.loc.pos.y + self.back_wheels.loc.pos.y) / 2
+        z = (self.front_wheels.loc.height + self.back_wheels.loc.height) / 2
 
-        self.model.setPos(x, y, 1)
+        self.model.setPos(x, y, 1 + z)
 
         dx = self.back_wheels.loc.pos.x - self.front_wheels.loc.pos.x
         dy = self.back_wheels.loc.pos.y - self.front_wheels.loc.pos.y
         angle = math.atan2(dy, dx)
 
         self.model.setH(math.degrees(angle))
+
+        dz = self.back_wheels.loc.height - self.front_wheels.loc.height
+        slope = math.atan2(dz, self.wheel_dist)
+
+        self.model.setR(math.degrees(-slope))
 
 
 class TrainWheels:
@@ -64,13 +70,16 @@ class TrainWheels:
         self.position_model()
 
     def position_model(self):
-        self.model.setPos(self.loc.pos.x, self.loc.pos.y, 0)
+        self.model.setPos(self.loc.pos.x, self.loc.pos.y, self.loc.height)
 
         h = self.loc.heading
+        slope = self.loc.slope
         if self.is_reverse:
             h += math.pi
+            slope = -slope
 
         self.model.setH(math.degrees(h))
+        self.model.setR(math.degrees(-slope))
 
     def update_loc(self, new_loc):
         self.loc = new_loc
@@ -82,8 +91,8 @@ class Train:
         self.base = base
         self.track = track
 
-        self.loc = CurveLocation(start_uuid, Point(-50, 0), math.pi/2, math.pi, constants.DIRECTION_REVERSE)
-        self.speed = 40
+        self.loc = CurveLocation(start_uuid, Point(-50, 0), math.pi/2, 0, 0, math.pi, constants.DIRECTION_REVERSE)
+        self.speed = 10
 
         self.length = 15
 

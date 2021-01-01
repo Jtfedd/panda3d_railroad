@@ -37,7 +37,7 @@ class Curve(Straight):
             else:
                 heading_angle -= math.pi/2
 
-            return CurveLocation(self.uuid, self.startNode.point, heading_angle, self.startAngle, direction)
+            return CurveLocation(self.uuid, self.startNode.point, heading_angle, self.startNode.height, self.get_slope(direction), self.startAngle, direction)
 
         if node_id == self.endNode.uuid:
             direction = constants.DIRECTION_REVERSE
@@ -50,7 +50,7 @@ class Curve(Straight):
             else:
                 heading_angle -= math.pi / 2
 
-            return CurveLocation(self.uuid, self.endNode.point, heading_angle, self.endAngle, direction)
+            return CurveLocation(self.uuid, self.endNode.point, heading_angle, self.endNode.height, self.get_slope(direction), self.endAngle, direction)
 
         raise AssertionError(self.uuid + ' does not start or end with the node ' + node_id)
 
@@ -94,6 +94,7 @@ class Curve(Straight):
 
         x = self.center.x + (self.radius * math.cos(new_angle))
         y = self.center.y + (self.radius * math.sin(new_angle))
+        z = self.startNode.height + ((self.endNode.height - self.startNode.height) * ((new_angle - self.startAngle) / (self.endAngle - self.startAngle)))
         new_pos = Point(x, y)
 
         heading_angle = new_angle
@@ -102,22 +103,23 @@ class Curve(Straight):
         else:
             heading_angle -= math.pi/2
 
-        return CurveLocation(self.uuid, new_pos, heading_angle, new_angle, loc.direction)
+        return CurveLocation(self.uuid, new_pos, heading_angle, z, self.get_slope(loc.direction), new_angle, loc.direction)
 
     def get_geometry(self):
         segs = LineSegs()
         segs.setThickness(2.0)
         segs.setColor(Vec4(0, 1, 0, 1))
-        segs.moveTo(self.startNode.point.x, self.startNode.point.y, 0)
+        segs.moveTo(self.startNode.point.x, self.startNode.point.y, self.startNode.height)
 
         for i in range(100):
             angle = self.startAngle + ((self.endAngle - self.startAngle) * (i / 100.0))
             x = self.center.x + (math.cos(angle) * self.radius)
             y = self.center.y + (math.sin(angle) * self.radius)
+            height = self.startNode.height + ((self.endNode.height - self.startNode.height) * (i / 100.0))
 
-            segs.drawTo(x, y, 0)
+            segs.drawTo(x, y, height)
 
-        segs.drawTo(self.endNode.point.x, self.endNode.point.y, 0)
+        segs.drawTo(self.endNode.point.x, self.endNode.point.y, self.endNode.height)
 
         return segs.create(None)
 
@@ -137,9 +139,11 @@ class Curve(Straight):
 
 
 class CurveLocation:
-    def __init__(self, track_uuid, pos, heading, angle, direction):
+    def __init__(self, track_uuid, pos, heading, height, slope, angle, direction):
         self.track_uuid = track_uuid
         self.pos = pos
         self.heading = heading
+        self.height = height
+        self.slope = slope
         self.angle = angle
         self.direction = direction

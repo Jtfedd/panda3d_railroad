@@ -19,6 +19,17 @@ class Straight:
     def length(self):
         return self.startNode.point.distance(self.endNode.point)
 
+    def slope(self):
+        dz = self.endNode.height - self.startNode.height
+        return math.atan2(dz, self.length())
+
+    def get_slope(self, direction):
+        s = self.slope()
+        if direction == constants.DIRECTION_REVERSE:
+            s = -s
+
+        return s
+
     def track_angle(self):
         y = self.endNode.point.y - self.startNode.point.y
         x = self.endNode.point.x - self.startNode.point.x
@@ -40,7 +51,7 @@ class Straight:
             if direction == constants.DIRECTION_REVERSE:
                 heading_angle += math.pi
 
-            return StraightLocation(self.uuid, self.startNode.point, heading_angle, 0, direction)
+            return StraightLocation(self.uuid, self.startNode.point, heading_angle, self.startNode.height, self.get_slope(direction), 0, direction)
 
         if node_id == self.endNode.uuid:
             direction = constants.DIRECTION_REVERSE
@@ -51,7 +62,7 @@ class Straight:
             if direction == constants.DIRECTION_REVERSE:
                 heading_angle += math.pi
 
-            return StraightLocation(self.uuid, self.endNode.point, heading_angle, self.length(), direction)
+            return StraightLocation(self.uuid, self.endNode.point, heading_angle, self.endNode.height, self.get_slope(direction), self.length(), direction)
 
         raise AssertionError(self.uuid + ' does not start or end with the node ' + node_id)
 
@@ -94,20 +105,21 @@ class Straight:
 
         x = self.startNode.point.x + ((self.endNode.point.x - self.startNode.point.x) * new_percent)
         y = self.startNode.point.y + ((self.endNode.point.y - self.startNode.point.y) * new_percent)
+        z = self.startNode.height + ((self.endNode.height - self.startNode.height) * new_percent)
         new_pos = Point(x, y)
 
         heading_angle = self.track_angle()
         if loc.direction == constants.DIRECTION_REVERSE:
             heading_angle += math.pi
 
-        return StraightLocation(self.uuid, new_pos, heading_angle, new_t, loc.direction)
+        return StraightLocation(self.uuid, new_pos, heading_angle, z, self.get_slope(loc.direction), new_t, loc.direction)
 
     def get_geometry(self):
         segs = LineSegs()
         segs.setThickness(2.0)
         segs.setColor(Vec4(0, 1, 0, 1))
-        segs.moveTo(self.startNode.point.x, self.startNode.point.y, 0)
-        segs.drawTo(self.endNode.point.x, self.endNode.point.y, 0)
+        segs.moveTo(self.startNode.point.x, self.startNode.point.y, self.startNode.height)
+        segs.drawTo(self.endNode.point.x, self.endNode.point.y, self.endNode.height)
         return segs.create(None)
 
     def to_string(self):
@@ -122,9 +134,11 @@ class Straight:
 
 
 class StraightLocation:
-    def __init__(self, track_uuid, pos, heading, t, direction):
+    def __init__(self, track_uuid, pos, heading, height, slope, t, direction):
         self.track_uuid = track_uuid
         self.pos = pos
         self.heading = heading
         self.t = t
         self.direction = direction
+        self.height = height
+        self.slope = slope
