@@ -1,3 +1,5 @@
-venv
 .idea
+venv
+__pycache__
 *.pyc
+*.blend[1-9]
