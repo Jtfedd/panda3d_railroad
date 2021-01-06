@@ -11,6 +11,7 @@ from src.layout.components.curve import Curve
 from src.layout.track import Track
 from src.train.train import Train
 
+
 class MyApp(ShowBase):
     def __init__(self):
         ShowBase.__init__(self)
@@ -65,14 +66,14 @@ class MyApp(ShowBase):
         self.track = Track(nodes, tracks)
         self.track.render(self.render)
 
-        self.train = Train(self.track, t0.uuid, self)
+        self.train = Train(self.track, t0, self)
 
         self.taskMgr.add(self.update_task, "main_update_loop")
 
     def update_task(self, task):
         dt = globalClock.getDt()
 
-        self.train.update(task.time, dt)
+        self.train.update(dt)
 
         return task.cont
 

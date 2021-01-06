@@ -5,6 +5,7 @@ from panda3d.core import Vec4, LineSegs
 import src.constants as constants
 from src.layout.components.straight import Straight
 from src.geometry.point import Point
+from src.layout.components.location import Location
 
 
 class Curve(Straight):
@@ -26,37 +27,23 @@ class Curve(Straight):
         return (self.endAngle - self.startAngle) * self.radius
 
     def get_initial_location(self, node_id, rel_direction):
+        direction = constants.DIRECTION_FORWARD
+        angle = self.startAngle
+
         if node_id == self.startNode.uuid:
-            direction = constants.DIRECTION_FORWARD
             if rel_direction == constants.DIRECTION_TOWARD_NODE:
                 direction = constants.DIRECTION_REVERSE
 
-            heading_angle = self.startAngle
-            if direction == constants.DIRECTION_FORWARD:
-                heading_angle += math.pi/2
-            else:
-                heading_angle -= math.pi/2
-
-            return CurveLocation(self.uuid, self.startNode.point, heading_angle, self.startNode.height, self.get_slope(direction), self.startAngle, direction)
-
         if node_id == self.endNode.uuid:
-            direction = constants.DIRECTION_REVERSE
-            if rel_direction == constants.DIRECTION_TOWARD_NODE:
-                direction = constants.DIRECTION_FORWARD
+            if rel_direction == constants.DIRECTION_AWAY_FROM_NODE:
+                direction = constants.DIRECTION_REVERSE
+            angle = self.endAngle
 
-            heading_angle = self.endAngle
-            if direction == constants.DIRECTION_FORWARD:
-                heading_angle += math.pi / 2
-            else:
-                heading_angle -= math.pi / 2
+        return CurveLocation(self, angle, direction)
 
-            return CurveLocation(self.uuid, self.endNode.point, heading_angle, self.endNode.height, self.get_slope(direction), self.endAngle, direction)
-
-        raise AssertionError(self.uuid + ' does not start or end with the node ' + node_id)
-
-    def get_updated_location(self, loc, offset):
+    def get_offset(self, loc, offset):
         # Location must be from this track segment, otherwise it does not mean anything
-        if self.uuid != loc.track_uuid:
+        if self.uuid != loc.track_uuid():
             raise AssertionError(self.uuid + ' does not match provided ID ' + loc.track_uuid)
 
         offset_angle = offset / self.radius
@@ -76,7 +63,7 @@ class Curve(Straight):
 
             connecting_track = self.connections[self.startNode.uuid]
             new_track_loc = connecting_track.get_initial_location(self.startNode.uuid, relative_dir)
-            return connecting_track.get_updated_location(new_track_loc, remaining_offset)
+            return new_track_loc.get_offset(remaining_offset)
 
         if new_angle > self.endAngle:
             relative_dir = constants.DIRECTION_AWAY_FROM_NODE
@@ -90,20 +77,9 @@ class Curve(Straight):
 
             connecting_track = self.connections[self.endNode.uuid]
             new_track_loc = connecting_track.get_initial_location(self.endNode.uuid, relative_dir)
-            return connecting_track.get_updated_location(new_track_loc, remaining_offset)
+            return new_track_loc.get_offset(remaining_offset)
 
-        x = self.center.x + (self.radius * math.cos(new_angle))
-        y = self.center.y + (self.radius * math.sin(new_angle))
-        z = self.startNode.height + ((self.endNode.height - self.startNode.height) * ((new_angle - self.startAngle) / (self.endAngle - self.startAngle)))
-        new_pos = Point(x, y)
-
-        heading_angle = new_angle
-        if loc.direction == constants.DIRECTION_FORWARD:
-            heading_angle += math.pi/2
-        else:
-            heading_angle -= math.pi/2
-
-        return CurveLocation(self.uuid, new_pos, heading_angle, z, self.get_slope(loc.direction), new_angle, loc.direction)
+        return CurveLocation(self, new_angle, loc.direction)
 
     def get_geometry(self):
         segs = LineSegs()
@@ -138,12 +114,47 @@ class Curve(Straight):
         return string
 
 
-class CurveLocation:
-    def __init__(self, track_uuid, pos, heading, height, slope, angle, direction):
-        self.track_uuid = track_uuid
-        self.pos = pos
-        self.heading = heading
-        self.height = height
-        self.slope = slope
+class CurveLocation(Location):
+    def __init__(self, track, angle, direction):
+        self.track = track
         self.angle = angle
         self.direction = direction
+
+    def track_uuid(self):
+        return self.track.uuid
+
+    def get_pos(self):
+        x = self.track.center.x + (self.track.radius * math.cos(self.angle))
+        y = self.track.center.y + (self.track.radius * math.sin(self.angle))
+        return Point(x, y)
+
+    def get_height(self):
+        start_height = self.track.startNode.height
+        end_height = self.track.endNode.height
+
+        rel_angle = self.angle - self.track.startAngle
+        total_angle = self.track.endAngle - self.track.startAngle
+
+        return start_height + ((end_height - start_height) * (rel_angle / total_angle))
+
+    def get_h(self):
+        h = self.angle
+
+        if self.direction == constants.DIRECTION_FORWARD:
+            h += math.pi / 2
+        else:
+            h -= math.pi / 2
+
+        return h
+
+    def get_slope(self):
+        dz = self.track.endNode.height - self.track.startNode.height
+        slope = math.atan2(dz, self.track.length())
+
+        if self.direction == constants.DIRECTION_REVERSE:
+            slope = -slope
+
+        return slope
+
+    def get_offset(self, offset):
+        return self.track.get_offset(self, offset)
