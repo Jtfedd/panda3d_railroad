@@ -1,13 +1,25 @@
+from __future__ import annotations
+
 import math
 
-from src.geometry.point import Point
 from src.layout.components.curve import CurveLocation
+from src.layout.components.location import Location
+from src.layout.track import Track
 
 import src.constants as constants
 
 
 class TrainCar:
-    def __init__(self, base, track, initial_loc):
+    wheel_offset: float
+    wheel_dist: float
+
+    front_wheel_loc: Location
+    back_wheel_loc: Location
+
+    front_wheels: TrainWheels
+    back_wheels: TrainWheels
+
+    def __init__(self, base, track: Track, initial_loc: Location):
         self.base = base
         self.track = track
 
@@ -26,10 +38,10 @@ class TrainCar:
         self.model.reparentTo(self.base.render)
         self.position_model()
 
-    def length(self):
+    def length(self) -> float:
         return 2 * self.wheel_offset + self.wheel_dist
 
-    def update(self, new_loc):
+    def update(self, new_loc: Location):
         self.loc = new_loc
 
         front_wheel_loc = self.loc.get_offset(-self.wheel_offset)
@@ -66,6 +78,9 @@ class TrainCar:
 
 
 class TrainWheels:
+    loc: Location
+    is_reverse: bool
+
     def __init__(self, base, initial_loc, is_reverse):
         self.base = base
         self.loc = initial_loc
@@ -88,7 +103,7 @@ class TrainWheels:
         self.model.setH(math.degrees(h))
         self.model.setR(math.degrees(-slope))
 
-    def update_loc(self, new_loc):
+    def update_loc(self, new_loc: Location):
         self.loc = new_loc
         self.position_model()
 
@@ -99,7 +114,7 @@ class Train:
         self.track = track
 
         self.loc = CurveLocation(start_track, math.pi, constants.DIRECTION_REVERSE)
-        self.speed = 10
+        self.speed = 20
 
         self.length = 15
 

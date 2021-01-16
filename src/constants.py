@@ -1,7 +1,13 @@
+from enum import Enum
+
 MIN_TURN_RADIUS = 21
 
-DIRECTION_FORWARD = 0
-DIRECTION_REVERSE = 1
 
-DIRECTION_TOWARD_NODE = 2
-DIRECTION_AWAY_FROM_NODE = 3
+class Direction(Enum):
+    FORWARD = 1
+    REVERSE = 2
+
+
+class RelativeDirection(Enum):
+    TOWARD = 1
+    AWAY = 2

@@ -1,15 +1,24 @@
 import math
+from typing import Dict, List
 
 from panda3d.core import Vec4, LineSegs
 
 import src.util as util
-import src.constants as constants
+from src.constants import Direction, RelativeDirection
 from src.geometry.point import Point
 from src.layout.components.location import Location
+from src.layout.components.node import Node
 
 
 class Straight:
-    def __init__(self, startNode, endNode):
+    uuid: str
+
+    startNode: Node
+    endNode: Node
+
+    connections: Dict[str, ]
+
+    def __init__(self, startNode: Node, endNode: Node):
         self.uuid = util.gen_uuid()
         self.connections = {}
 
@@ -17,33 +26,33 @@ class Straight:
         self.startNode = startNode
         self.endNode = endNode
 
-    def length(self):
+    def length(self) -> float:
         return self.startNode.point.distance(self.endNode.point)
 
-    def add_connection(self, node_id, track):
+    def add_connection(self, node_id: str, track):
         self.connections[node_id] = track
 
-    def get_nodes(self):
+    def get_nodes(self) -> List[str]:
         return [self.startNode.uuid, self.endNode.uuid]
 
-    def get_initial_location(self, node_id, rel_direction):
-        direction = constants.DIRECTION_FORWARD
+    def get_initial_location(self, node_id: str, rel_direction: RelativeDirection) -> Location:
+        direction = Direction.FORWARD
         t = 0
 
         if node_id == self.startNode.uuid:
-            if rel_direction == constants.DIRECTION_TOWARD_NODE:
-                direction = constants.DIRECTION_REVERSE
+            if rel_direction == RelativeDirection.TOWARD:
+                direction = Direction.REVERSE
         else:
-            if rel_direction == constants.DIRECTION_AWAY_FROM_NODE:
-                direction = constants.DIRECTION_REVERSE
+            if rel_direction == RelativeDirection.AWAY:
+                direction = Direction.REVERSE
             t = self.length()
 
         return StraightLocation(self, t, direction)
 
-    def get_offset(self, loc, offset):
+    def get_offset(self, loc: Location, offset: float) -> Location:
         # Location must be from this track segment, otherwise it does not mean anything
         if self.uuid != loc.track_uuid():
-            raise AssertionError(self.uuid + ' does not match provided ID ' + loc.track_uuid)
+            raise AssertionError(self.uuid + ' does not match provided ID ' + loc.track_uuid())
 
         length = self.length()
 

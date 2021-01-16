@@ -51,9 +51,9 @@ class MyApp(ShowBase):
         p5 = Point(100, 0)
 
         n0 = Node(p0, 0)
-        n1 = Node(p1, 50)
-        n2 = Node(p2, 10)
-        n3 = Node(p3, 20)
+        n1 = Node(p1, 4)
+        n2 = Node(p2, 2)
+        n3 = Node(p3, 5)
 
         t0 = Curve(p4, 50, math.pi / 2, 3 * math.pi / 2, n0, n3)
         t1 = Straight(n0, n1)

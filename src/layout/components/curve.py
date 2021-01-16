@@ -23,7 +23,7 @@ class Curve(Straight):
         self.startAngle = startAngle
         self.endAngle = endAngle
 
-    def length(self):
+    def length(self) -> float:
         return (self.endAngle - self.startAngle) * self.radius
 
     def get_initial_location(self, node_id, rel_direction):
@@ -120,7 +120,7 @@ class CurveLocation(Location):
         self.angle = angle
         self.direction = direction
 
-    def track_uuid(self):
+    def track_uuid(self) -> str:
         return self.track.uuid
 
     def get_pos(self):
