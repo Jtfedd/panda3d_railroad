@@ -1,6 +1,6 @@
 import unittest
 
-from src.geometry.graham_scan import *
+from src.geometry.algorithm.graham_scan import *
 from src.geometry.point import Point
 
 
